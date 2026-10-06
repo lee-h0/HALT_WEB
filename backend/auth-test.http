@@ -1,0 +1,28 @@
+### 1. 회원가입 (성공하면 201)
+POST http://localhost:8080/api/auth/signup
+Content-Type: application/json
+
+{
+  "loginId": "testuser",
+  "password": "test1234!",
+  "nickname": "테스터",
+  "email": "test@example.com"
+}
+
+### 2. 로그인 (성공하면 accessToken이 나온다)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "testuser",
+  "password": "test1234!"
+}
+
+> {% client.global.set("token", response.body.accessToken); %}
+
+### 3. 내 정보 (2번을 먼저 실행해야 토큰이 채워진다)
+GET http://localhost:8080/api/auth/me
+Authorization: Bearer {{token}}
+
+### 4. 토큰 없이 호출 (401이 나와야 정상)
+GET http://localhost:8080/api/auth/me
