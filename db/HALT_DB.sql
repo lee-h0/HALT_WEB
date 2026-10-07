@@ -56,6 +56,9 @@ CREATE TABLE users (
 );
 GO
 
+select *
+from users
+
 -- 랭킹 조회용 (포인트 순, 푼 문제 수 순)
 CREATE INDEX IX_users_total_points ON users (total_points DESC) INCLUDE (nickname);
 CREATE INDEX IX_users_solved_count ON users (solved_count DESC) INCLUDE (nickname);
