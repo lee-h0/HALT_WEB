@@ -5,6 +5,8 @@ import MainPage from './pages/MainPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ProblemListPage from './pages/ProblemListPage'
+import ProblemDetailPage from './pages/ProblemDetailPage'
 
 export default function App() {
   return (
@@ -29,7 +31,15 @@ export default function App() {
             path="/problems"
             element={
               <ProtectedRoute>
-                <PlaceholderPage title="문제풀이" />
+                <ProblemListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/problems/:problemId"
+            element={
+              <ProtectedRoute>
+                <ProblemDetailPage />
               </ProtectedRoute>
             }
           />
