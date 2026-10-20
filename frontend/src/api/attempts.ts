@@ -1,5 +1,6 @@
 import client, { getToken } from './client'
-import type { StartAttemptResponse } from '../types/attempt'
+import type { StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
+import type { ProblemFile } from '../types/problem'
 
 export async function startAttempt(problemId: number): Promise<StartAttemptResponse> {
   const response = await client.post<StartAttemptResponse>(`/api/problems/${problemId}/attempts`)
@@ -8,6 +9,22 @@ export async function startAttempt(problemId: number): Promise<StartAttemptRespo
 
 export async function abandonAttempt(attemptId: number): Promise<void> {
   await client.post(`/api/attempts/${attemptId}/abandon`)
+}
+
+/** 지금 에디터의 파일 전체를 보내 공개 테스트를 실행한다 */
+export async function runTests(attemptId: number, files: ProblemFile[]): Promise<TestRunResult> {
+  const response = await client.post<TestRunResult>(`/api/attempts/${attemptId}/test`, { files })
+  return response.data
+}
+
+/** 제출. 공개 테스트와 숨김 테스트로 채점하고, 응시가 끝난다 */
+export async function submitAttempt(
+  attemptId: number,
+  files: ProblemFile[],
+  fileChangeCount: number,
+): Promise<SubmitResult> {
+  const response = await client.post<SubmitResult>(`/api/attempts/${attemptId}/submit`, { files, fileChangeCount })
+  return response.data
 }
 
 /**

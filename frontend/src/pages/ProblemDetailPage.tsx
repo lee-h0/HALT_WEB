@@ -65,6 +65,9 @@ export default function ProblemDetailPage() {
           <p className="muted">
             풀이 화면을 벗어나면 기록이 초기화되고, 다시 들어오면 처음부터 시작합니다.
           </p>
+          {problem.solved && (
+            <p className="solved-warning">이미 푼 문제입니다. 다시 풀 수는 있지만 포인트는 지급되지 않습니다.</p>
+          )}
         </div>
         <Link to={`/problems/${problem.problemId}/solve`} className="button">
           문제 풀기

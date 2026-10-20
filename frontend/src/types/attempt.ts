@@ -15,3 +15,34 @@ export interface StartAttemptResponse {
   pointsAvailable: boolean
   files: ProblemFile[]
 }
+
+/** 백엔드 POST /api/attempts/{id}/test 응답 */
+export interface TestRunResult {
+  passed: boolean
+  passedCount: number
+  totalCount: number
+  timedOut: boolean
+  durationMs: number
+  output: string
+}
+
+/** 백엔드 POST /api/attempts/{id}/submit 응답 */
+export interface SubmitResult {
+  correct: boolean
+  score: number
+  /** 이번 제출로 실제 늘어난 포인트 (처음 맞힌 경우에만 0보다 크다) */
+  pointsAwarded: number
+  totalPoints: number
+  firstSolve: boolean
+  newBest: boolean
+  pointsAvailable: boolean
+  /** AI 사용량 100% 또는 제한시간 초과로 최하점 처리됨 */
+  overLimit: boolean
+  passedCount: number
+  totalCount: number
+  failedTests: string[]
+  message: string
+  elapsedSec: number
+  tokenUsagePercent: number
+  durationMs: number
+}

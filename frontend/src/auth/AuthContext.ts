@@ -8,6 +8,8 @@ export interface AuthContextValue {
   loading: boolean
   login: (loginId: string, password: string) => Promise<void>
   logout: () => void
+  /** 포인트처럼 바뀐 회원 정보를 서버에서 다시 읽어 온다 */
+  refreshUser: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

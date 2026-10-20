@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useBlocker, useParams } from 'react-router-dom'
+import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import { fetchProblem } from '../api/problems'
-import { abandonAttempt, abandonAttemptOnUnload, startAttempt } from '../api/attempts'
+import { abandonAttempt, abandonAttemptOnUnload, runTests, startAttempt, submitAttempt } from '../api/attempts'
+import { useAuth } from '../auth/AuthContext'
 import { getErrorMessage } from '../api/client'
 import FileTree from '../components/solve/FileTree'
 import { formatTime, useCountdown } from '../components/solve/useCountdown'
+import { useResizable } from '../components/solve/useResizable'
+import ResizeHandle from '../components/solve/ResizeHandle'
 import type { ProblemDetail } from '../types/problem'
-import type { StartAttemptResponse } from '../types/attempt'
+import type { StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
 
 const LEAVE_MESSAGE = '문제페이지에서 벗어나면 문제 기록이 초기화 됩니다. 그래도 이동하시겠습니까?'
 
@@ -19,6 +22,9 @@ function languageOf(path: string): string {
 }
 
 type BottomTab = 'ai' | 'test'
+
+/** 하단 패널은 에디터가 최소 150px은 보이도록 제한한다 (상단 바와 탭 높이 약 100px 제외) */
+const maxBottomHeight = () => window.innerHeight - 250
 
 export default function SolvePage() {
   const { problemId } = useParams()
@@ -35,9 +41,30 @@ export default function SolvePage() {
   const [activePath, setActivePath] = useState<string | null>(null)
   const [bottomTab, setBottomTab] = useState<BottomTab>('ai')
 
+  const [testRunning, setTestRunning] = useState(false)
+
+  const [submitting, setSubmitting] = useState(false)
+  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null)
+  const [submitError, setSubmitError] = useState('')
+  const { refreshUser } = useAuth()
+  const navigate = useNavigate()
+  const [testResult, setTestResult] = useState<TestRunResult | null>(null)
+  const [testError, setTestError] = useState('')
+
   /** 응시 시작 시각을 브라우저 시계로 환산한 값 (서버가 알려준 경과 시간을 반영) */
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null)
   const remainingSec = useCountdown(startedAtMs, attempt?.timeLimitSec ?? 1200)
+
+  // 패널 크기 (경계선을 끌어 조절, 브라우저에 기억됨)
+  const descriptionPanel = useResizable({
+    storageKey: 'solve.descriptionWidth', initial: 420, min: 260, max: 700, axis: 'x',
+  })
+  const explorerPanel = useResizable({
+    storageKey: 'solve.explorerWidth', initial: 300, min: 160, max: 500, axis: 'x',
+  })
+  const bottomPanel = useResizable({
+    storageKey: 'solve.bottomHeight', initial: 450, min: 120, max: maxBottomHeight, axis: 'y', reverse: true,
+  })
 
   // 개발 모드(StrictMode)에서는 effect가 두 번 실행되므로 응시가 두 번 시작되지 않게 막는다
   const startedRef = useRef(false)
@@ -67,7 +94,9 @@ export default function SolvePage() {
       .catch((err: unknown) => setError(getErrorMessage(err, '응시를 시작하지 못했습니다.')))
   }, [id])
 
-  const attemptId = attempt?.attemptId ?? null
+  // 제출이 끝나면 응시가 종료되므로 이탈 경고와 이탈 처리를 하지 않는다
+  const finished = submitResult !== null
+  const attemptId = attempt !== null && !finished ? attempt.attemptId : null
 
   // 사이트 안에서 다른 화면으로 이동할 때: 경고 후 이동하면 응시를 이탈 처리한다
   const blocker = useBlocker(
@@ -128,6 +157,42 @@ export default function SolvePage() {
     })
   }
 
+  async function handleSubmit() {
+    if (attempt === null || submitting || finished) return
+    if (!window.confirm('제출하면 응시가 끝나고 숨김 테스트까지 채점합니다. 제출할까요?')) return
+
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const fileList = Object.entries(files).map(([path, content]) => ({ path, content }))
+      const result = await submitAttempt(attempt.attemptId, fileList, modifiedPaths.size)
+      setSubmitResult(result)
+      refreshUser().catch(() => {
+        // 상단의 포인트 표시만 늦게 바뀔 뿐이라 무시한다
+      })
+    } catch (err: unknown) {
+      setSubmitError(getErrorMessage(err, '제출하지 못했습니다.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleRunTests() {
+    if (attempt === null || testRunning) return
+    setBottomTab('test')
+    setTestRunning(true)
+    setTestError('')
+    try {
+      const fileList = Object.entries(files).map(([path, content]) => ({ path, content }))
+      setTestResult(await runTests(attempt.attemptId, fileList))
+    } catch (err: unknown) {
+      setTestResult(null)
+      setTestError(getErrorMessage(err, '테스트를 실행하지 못했습니다.'))
+    } finally {
+      setTestRunning(false)
+    }
+  }
+
   function updateActiveFile(content: string) {
     if (activePath === null) return
     setFiles((prev) => ({ ...prev, [activePath]: content }))
@@ -178,18 +243,18 @@ export default function SolvePage() {
         </div>
 
         <div className="solve-actions">
-          <button type="button" className="button button-ghost" disabled title="다음 단계에서 연결합니다">
-            테스트 실행
+          <button type="button" className="button button-ghost" onClick={handleRunTests} disabled={testRunning}>
+            {testRunning ? '테스트 중...' : '테스트 실행'}
           </button>
-          <button type="button" className="button" disabled title="다음 단계에서 연결합니다">
-            제출
+          <button type="button" className="button" onClick={handleSubmit} disabled={submitting || finished}>
+            {submitting ? '채점 중...' : finished ? '제출 완료' : '제출'}
           </button>
         </div>
       </header>
 
       <div className="solve-body">
         {/* 왼쪽: 문제 설명 */}
-        <aside className="solve-panel solve-description">
+        <aside className="solve-panel solve-description" style={{ width: descriptionPanel.size }}>
           <div className="notice-box">AI에게 구현을 맡기고, 나온 코드를 검증해 제출하세요.</div>
           <div className="problem-title">
             <h1>{problem.title}</h1>
@@ -218,11 +283,15 @@ export default function SolvePage() {
           )}
         </aside>
 
+        <ResizeHandle axis="x" dragging={descriptionPanel.dragging} {...descriptionPanel.handleProps} />
+
         {/* 가운데: 파일 탐색기 */}
-        <nav className="solve-panel solve-explorer">
+        <nav className="solve-panel solve-explorer" style={{ width: explorerPanel.size }}>
           <div className="panel-title">탐색기</div>
           <FileTree paths={paths} activePath={activePath} modifiedPaths={modifiedPaths} onSelect={openFile} />
         </nav>
+
+        <ResizeHandle axis="x" dragging={explorerPanel.dragging} {...explorerPanel.handleProps} />
 
         {/* 오른쪽: 에디터 + 하단 패널 */}
         <section className="solve-main">
@@ -262,7 +331,9 @@ export default function SolvePage() {
             )}
           </div>
 
-          <div className="bottom-panel">
+          <ResizeHandle axis="y" dragging={bottomPanel.dragging} {...bottomPanel.handleProps} />
+
+          <div className="bottom-panel" style={{ height: bottomPanel.size }}>
             <div className="bottom-tabs">
               <button
                 type="button"
@@ -283,11 +354,148 @@ export default function SolvePage() {
               {bottomTab === 'ai' ? (
                 <p className="muted">AI 지시창은 다음 단계에서 연결합니다.</p>
               ) : (
-                <p className="muted">테스트 실행 결과가 여기에 표시됩니다. (다음 단계에서 연결)</p>
+                <TestResultView running={testRunning} result={testResult} error={testError} />
               )}
             </div>
           </div>
         </section>
+      </div>
+
+      {submitError && (
+        <div className="submit-error" role="alert">
+          {submitError}
+          <button type="button" onClick={() => setSubmitError('')} aria-label="닫기">
+            ×
+          </button>
+        </div>
+      )}
+
+      {submitResult && (
+        <SubmitResultDialog
+          result={submitResult}
+          problemTitle={problem.title}
+          onClose={() => navigate('/problems')}
+          onRetry={() => navigate(`/problems/${problem.problemId}`)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** 하단 "테스트" 탭의 내용 */
+function TestResultView({
+  running,
+  result,
+  error,
+}: {
+  running: boolean
+  result: TestRunResult | null
+  error: string
+}) {
+  if (running) {
+    return <p className="muted">테스트를 실행하는 중입니다... (처음 실행은 조금 더 걸릴 수 있습니다)</p>
+  }
+  if (error) {
+    return <p className="error">{error}</p>
+  }
+  if (result === null) {
+    return <p className="muted">상단의 "테스트 실행"을 누르면 공개 테스트 결과가 여기에 표시됩니다.</p>
+  }
+
+  return (
+    <div className="test-result">
+      <p className={result.passed ? 'test-summary pass' : 'test-summary fail'}>
+        {result.passed ? '✔ 공개 테스트 통과' : '✘ 공개 테스트 실패'} · {result.passedCount}/{result.totalCount} 통과 ·{' '}
+        {(result.durationMs / 1000).toFixed(1)}초{result.timedOut && ' · 제한시간 초과'}
+      </p>
+      {result.passed && (
+        <p className="muted">공개 테스트만 확인한 결과입니다. 제출하면 지킬 조건을 검사하는 숨김 테스트도 실행됩니다.</p>
+      )}
+      <pre className="test-output">{result.output}</pre>
+    </div>
+  )
+}
+
+/** 제출 결과 창 */
+function SubmitResultDialog({
+  result,
+  problemTitle,
+  onClose,
+  onRetry,
+}: {
+  result: SubmitResult
+  problemTitle: string
+  onClose: () => void
+  onRetry: () => void
+}) {
+  const minutes = Math.floor(result.elapsedSec / 60)
+  const seconds = result.elapsedSec % 60
+
+  return (
+    <div className="dialog-backdrop">
+      <div className="dialog" role="dialog" aria-modal="true">
+        <p className="muted">{problemTitle}</p>
+        <h1 className={result.correct ? 'result-title pass' : 'result-title fail'}>
+          {result.correct ? '정답입니다' : '오답입니다'}
+        </h1>
+        {!result.correct && <p>{result.message}</p>}
+
+        <div className="result-grid">
+          <div>
+            <span className="muted">테스트</span>
+            <strong>
+              {result.passedCount} / {result.totalCount}
+            </strong>
+          </div>
+          <div>
+            <span className="muted">점수</span>
+            <strong>{result.score} P</strong>
+          </div>
+          <div>
+            <span className="muted">소요 시간</span>
+            <strong>
+              {minutes}분 {seconds}초
+            </strong>
+          </div>
+          <div>
+            <span className="muted">AI 사용량</span>
+            <strong>{result.tokenUsagePercent}%</strong>
+          </div>
+        </div>
+
+        {result.correct && (
+          <p className="result-points">
+            {!result.pointsAvailable
+              ? '풀이를 먼저 열람한 문제라 점수가 반영되지 않습니다.'
+              : result.firstSolve
+                ? `처음 푼 문제입니다. +${result.pointsAwarded} P (보유 ${result.totalPoints} P)`
+                : '이미 푼 문제입니다. 포인트는 처음 맞혔을 때만 지급됩니다.'}
+          </p>
+        )}
+        {result.overLimit && (
+          <p className="muted">제한시간 또는 AI 사용량 한도를 넘겨 최하점으로 처리되었습니다.</p>
+        )}
+
+        {result.failedTests.length > 0 && (
+          <div className="failed-tests">
+            <strong>통과하지 못한 테스트</strong>
+            <ul>
+              {result.failedTests.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+            <p className="muted">공개 테스트를 통과해도 지킬 조건을 어기면 숨김 테스트에서 실패합니다.</p>
+          </div>
+        )}
+
+        <div className="dialog-actions">
+          <button type="button" className="button button-ghost" onClick={onRetry}>
+            다시 풀기
+          </button>
+          <button type="button" className="button" onClick={onClose}>
+            문제 목록
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -17,7 +17,8 @@ DROP TABLE IF EXISTS problems;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS difficulty_settings;
 */
-
+select *
+from attempts
 /*항상 이것부터 실행 후 DB작업*/
 USE HALT_WEB_DB;
 GO
