@@ -5,8 +5,8 @@ import { getErrorMessage } from '../api/client'
 import type { ProblemDetail } from '../types/problem'
 
 /**
- * 문제 상세. 지금은 설명과 초기 파일만 보여준다.
- * 다음 단계에서 이 화면을 파일 탐색기, 에디터, AI 지시창이 있는 풀이 화면으로 바꾼다.
+ * 문제 상세. 풀이를 시작하기 전에 설명과 조건, 초기 파일을 미리 본다.
+ * "문제 풀기"를 누르면 풀이 화면(SolvePage)으로 이동하며 응시가 시작된다.
  */
 export default function ProblemDetailPage() {
   const { problemId } = useParams()
@@ -59,6 +59,18 @@ export default function ProblemDetailPage() {
         {problem.minPoints} P{problem.solved && ' · 풀이 완료'}
       </p>
 
+      <div className="start-box card">
+        <div>
+          <strong>풀이를 시작하면 20분 타이머가 바로 시작됩니다.</strong>
+          <p className="muted">
+            풀이 화면을 벗어나면 기록이 초기화되고, 다시 들어오면 처음부터 시작합니다.
+          </p>
+        </div>
+        <Link to={`/problems/${problem.problemId}/solve`} className="button">
+          문제 풀기
+        </Link>
+      </div>
+
       <div className="card">
         <h2>문제 설명</h2>
         <p className="prose">{problem.description}</p>
@@ -91,7 +103,7 @@ export default function ProblemDetailPage() {
         </details>
       ))}
 
-      <p className="muted">풀이 화면(에디터, AI 지시창, 테스트, 제출)은 준비 중입니다.</p>
+
     </section>
   )
 }

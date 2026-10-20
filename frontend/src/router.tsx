@@ -1,0 +1,60 @@
+import { createBrowserRouter } from 'react-router-dom'
+import App from './App'
+import ProtectedRoute from './components/ProtectedRoute'
+import MainPage from './pages/MainPage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import PlaceholderPage from './pages/PlaceholderPage'
+import ProblemListPage from './pages/ProblemListPage'
+import ProblemDetailPage from './pages/ProblemDetailPage'
+import SolvePage from './pages/SolvePage'
+
+/**
+ * 화면 주소 목록.
+ * 문제 풀이 화면은 페이지 이탈 경고(useBlocker)가 필요해서 createBrowserRouter 방식을 쓴다.
+ */
+export const router = createBrowserRouter([
+  {
+    element: <App />,
+    children: [
+      { path: '/', element: <MainPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <SignupPage /> },
+      { path: '/ranking', element: <PlaceholderPage title="랭킹" /> },
+      {
+        path: '/mypage',
+        element: (
+          <ProtectedRoute>
+            <PlaceholderPage title="마이페이지" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/problems',
+        element: (
+          <ProtectedRoute>
+            <ProblemListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/problems/:problemId',
+        element: (
+          <ProtectedRoute>
+            <ProblemDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      { path: '*', element: <PlaceholderPage title="페이지를 찾을 수 없습니다" /> },
+    ],
+  },
+  // 풀이 화면은 상단 메뉴 없이 화면 전체를 쓴다
+  {
+    path: '/problems/:problemId/solve',
+    element: (
+      <ProtectedRoute>
+        <SolvePage />
+      </ProtectedRoute>
+    ),
+  },
+])

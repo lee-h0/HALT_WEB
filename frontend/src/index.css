@@ -325,6 +325,257 @@ pre {
   font-family: Consolas, 'Courier New', monospace;
 }
 
+.start-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.start-box p {
+  margin: 4px 0 0;
+}
+
+/* ===== 문제 풀이 화면 ===== */
+.solve {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.solve-message {
+  padding: 40px;
+}
+
+.solve-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.solve-topbar-left,
+.solve-metrics,
+.solve-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}
+
+.timer {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer.over {
+  color: var(--danger);
+}
+
+.usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.usage-bar {
+  display: inline-block;
+  width: 140px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.usage-fill {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.solve-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px 240px 1fr;
+  min-height: 0;
+}
+
+.solve-panel {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.solve-description {
+  padding: 20px;
+}
+
+.solve-description h1 {
+  font-size: 1.3rem;
+}
+
+.notice-box {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.panel-title {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.file-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.tree-folder {
+  color: var(--muted);
+}
+
+.tree-file {
+  cursor: pointer;
+}
+
+.tree-file:hover {
+  background: var(--border);
+}
+
+.tree-file.active {
+  background: rgba(47, 111, 237, 0.25);
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffc107;
+}
+
+.solve-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor-tabs {
+  display: flex;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  overflow-x: auto;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border);
+}
+
+.editor-tab button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.editor-tab.active button {
+  color: var(--text);
+}
+
+.editor-tab.active {
+  background: var(--bg);
+}
+
+.editor-tab .tab-close {
+  padding-left: 0;
+}
+
+.editor-area {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-empty {
+  padding: 20px;
+}
+
+.bottom-panel {
+  height: 220px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bottom-tabs button {
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.bottom-tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+}
+
+.bottom-content {
+  flex: 1;
+  padding: 12px 16px;
+  overflow-y: auto;
+  background: #0b0f17;
+}
+
 @media (max-width: 640px) {
   .header {
     flex-wrap: wrap;
