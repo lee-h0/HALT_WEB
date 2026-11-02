@@ -8,6 +8,7 @@ import PlaceholderPage from './pages/PlaceholderPage'
 import ProblemListPage from './pages/ProblemListPage'
 import ProblemDetailPage from './pages/ProblemDetailPage'
 import SolvePage from './pages/SolvePage'
+import RankingPage from './pages/RankingPage'
 
 /**
  * 화면 주소 목록.
@@ -20,7 +21,8 @@ export const router = createBrowserRouter([
       { path: '/', element: <MainPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignupPage /> },
-      { path: '/ranking', element: <PlaceholderPage title="랭킹" /> },
+      // 랭킹은 로그인하지 않아도 볼 수 있다 (로그인하면 내 순위도 표시)
+      { path: '/ranking', element: <RankingPage /> },
       {
         path: '/mypage',
         element: (

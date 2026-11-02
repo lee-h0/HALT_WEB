@@ -1,0 +1,114 @@
+/* 랭킹 화면 */
+.ranking-login-hint {
+  margin-bottom: 16px;
+}
+
+/* 내 순위 카드: 내 순위 | 포인트 | 푼 문제 수를 3등분 */
+.my-rank {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  margin-bottom: 20px;
+  padding-left: 0;
+  padding-right: 0;
+  border-color: var(--primary);
+}
+
+.my-rank-name,
+.my-rank-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+/* 칸 사이 세로 구분선 */
+.my-rank-item {
+  border-left: 1px solid var(--border);
+}
+
+/* "내 순위"와 닉네임 사이 간격 */
+.my-rank-name {
+  gap: 10px;
+}
+
+.my-rank-name strong {
+  font-size: 1.1rem;
+}
+
+.my-rank-item strong {
+  font-size: 1.4rem;
+  color: var(--primary-hover);
+}
+
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.ranking-card h2 {
+  margin-top: 0;
+}
+
+.ranking-table .num {
+  text-align: right;
+}
+
+.ranking-table tr.me td {
+  background: rgba(47, 111, 237, 0.15);
+  font-weight: 700;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rank-badge.top1 {
+  background: #e6b800;
+  color: #1a1400;
+}
+
+.rank-badge.top2 {
+  background: #b8c0cc;
+  color: #14171c;
+}
+
+.rank-badge.top3 {
+  background: #c9834a;
+  color: #1c1006;
+}
+
+.me-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .ranking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-rank-name strong {
+    font-size: 1rem;
+  }
+
+  .my-rank-item strong {
+    font-size: 1.2rem;
+  }
+}
