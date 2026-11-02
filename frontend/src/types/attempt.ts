@@ -46,3 +46,29 @@ export interface SubmitResult {
   tokenUsagePercent: number
   durationMs: number
 }
+
+/** 백엔드 POST /api/attempts/{id}/prompt 응답 */
+export interface PromptResponse {
+  /** AI가 한 일을 짧게 설명한 답변 */
+  reply: string
+  /** AI가 바꾸거나 새로 만든 파일 (전체 내용) */
+  changedFiles: ProblemFile[]
+  inputTokens: number
+  outputTokens: number
+  /** 이번 응시에서 지금까지 쓴 토큰 합계 */
+  tokensUsed: number
+  tokenUsagePercent: number
+  promptCount: number
+  fileChangeCount: number
+}
+
+/** AI 터미널에 보이는 대화 한 줄 */
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'ai' | 'error'
+  text: string
+  /** AI 답변일 때 바뀐 파일 경로 */
+  changedPaths?: string[]
+  /** AI 답변일 때 이번 호출에 쓴 토큰 */
+  tokens?: number
+}

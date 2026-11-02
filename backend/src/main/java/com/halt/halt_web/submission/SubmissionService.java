@@ -116,7 +116,7 @@ public class SubmissionService {
 
         int totalCount = Math.max(summary.total(), summary.passed());
         SubmissionRecorder.Recorded recorded = recorder.record(attemptId, correct, score, pointsAvailable,
-                elapsedSec, request.fileChangeCount(), submittedFiles, summary.passed(), totalCount, result.output());
+                elapsedSec, submittedFiles, summary.passed(), totalCount, result.output());
 
         int tokenUsagePercent = tokenLimit > 0
                 ? (int) Math.min(100, Math.round(attempt.getTokensUsed() * 100.0 / tokenLimit))

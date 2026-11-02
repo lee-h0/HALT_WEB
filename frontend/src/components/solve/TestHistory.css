@@ -1,0 +1,45 @@
+/* 하단 "테스트" 탭: 실행 기록 (최신이 위) */
+.test-history {
+  display: flex;
+  flex-direction: column;
+}
+
+.test-run {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.test-run:last-child {
+  border-bottom: none;
+}
+
+/* 이전 결과는 흐리게 */
+.test-run.old {
+  opacity: 0.55;
+}
+
+.test-run-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-family: Consolas, monospace;
+}
+
+.test-run-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.test-run-body .test-summary {
+  margin: 0;
+}
+
+.test-failed {
+  color: var(--danger);
+  font-size: 0.85rem;
+}

@@ -19,6 +19,17 @@ DROP TABLE IF EXISTS difficulty_settings;
 */
 select *
 from attempts
+
+SELECT * FROM user_problem_best;
+SELECT user_id, nickname, total_points, solved_count FROM users;
+
+select *
+from users;
+
+
+SELECT TOP 5 * FROM prompt_logs ORDER BY prompt_id DESC;
+SELECT TOP 3 attempt_id, tokens_used, prompt_count, file_change_count FROM attempts ORDER BY attempt_id DESC;
+
 /*항상 이것부터 실행 후 DB작업*/
 USE HALT_WEB_DB;
 GO

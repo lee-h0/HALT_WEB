@@ -1,5 +1,5 @@
 import client, { getToken } from './client'
-import type { StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
+import type { PromptResponse, StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
 import type { ProblemFile } from '../types/problem'
 
 export async function startAttempt(problemId: number): Promise<StartAttemptResponse> {
@@ -17,13 +17,22 @@ export async function runTests(attemptId: number, files: ProblemFile[]): Promise
   return response.data
 }
 
-/** 제출. 공개 테스트와 숨김 테스트로 채점하고, 응시가 끝난다 */
-export async function submitAttempt(
-  attemptId: number,
-  files: ProblemFile[],
-  fileChangeCount: number,
-): Promise<SubmitResult> {
-  const response = await client.post<SubmitResult>(`/api/attempts/${attemptId}/submit`, { files, fileChangeCount })
+/** 제출. 공개 테스트와 숨김 테스트로 채점하고, 응시가 끝난다 (파일 변경 횟수는 서버가 센다) */
+export async function submitAttempt(attemptId: number, files: ProblemFile[]): Promise<SubmitResult> {
+  const response = await client.post<SubmitResult>(`/api/attempts/${attemptId}/submit`, { files })
+  return response.data
+}
+
+/**
+ * AI에게 지시한다. 지금 에디터의 파일 전체를 함께 보내고, AI가 바꾼 파일을 돌려받는다.
+ * AI 응답은 길면 수십 초 걸리므로 기본 제한시간보다 넉넉하게 기다린다.
+ */
+export async function sendPrompt(attemptId: number, prompt: string, files: ProblemFile[]): Promise<PromptResponse> {
+  const response = await client.post<PromptResponse>(
+    `/api/attempts/${attemptId}/prompt`,
+    { prompt, files },
+    { timeout: 120_000 },
+  )
   return response.data
 }
 

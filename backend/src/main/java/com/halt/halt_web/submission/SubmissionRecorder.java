@@ -50,7 +50,7 @@ public class SubmissionRecorder {
 
     @Transactional
     public Recorded record(Long attemptId, boolean correct, int score, boolean pointsAvailable,
-                           long elapsedSec, int fileChangeCount, Map<String, String> submittedFiles,
+                           long elapsedSec, Map<String, String> submittedFiles,
                            int passedCount, int totalCount, String output) {
         Attempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "응시 기록을 찾을 수 없습니다."));
@@ -62,7 +62,6 @@ public class SubmissionRecorder {
         attempt.setStatus(correct ? AttemptStatus.PASSED : AttemptStatus.FAILED);
         attempt.setSubmittedAt(LocalDateTime.now());
         attempt.setElapsedSec((int) elapsedSec);
-        attempt.setFileChangeCount(fileChangeCount);
         attempt.setScore(score);
 
         // 다른 사람 풀이 화면에서 보여줄 제출 파일 (숨김 테스트는 저장하지 않는다)

@@ -2,15 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import { fetchProblem } from '../api/problems'
-import { abandonAttempt, abandonAttemptOnUnload, runTests, startAttempt, submitAttempt } from '../api/attempts'
+import { abandonAttempt, abandonAttemptOnUnload, runTests, sendPrompt, startAttempt, submitAttempt } from '../api/attempts'
 import { useAuth } from '../auth/AuthContext'
 import { getErrorMessage } from '../api/client'
 import FileTree from '../components/solve/FileTree'
 import { formatTime, useCountdown } from '../components/solve/useCountdown'
 import { useResizable } from '../components/solve/useResizable'
 import ResizeHandle from '../components/solve/ResizeHandle'
+import AiTerminal from '../components/solve/AiTerminal'
+import ClipboardGuard from '../components/solve/ClipboardGuard'
+import '../components/solve/TestHistory.css'
 import type { ProblemDetail } from '../types/problem'
-import type { StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
+import type { ChatMessage, StartAttemptResponse, SubmitResult, TestRunResult } from '../types/attempt'
 
 const LEAVE_MESSAGE = '문제페이지에서 벗어나면 문제 기록이 초기화 됩니다. 그래도 이동하시겠습니까?'
 
@@ -48,8 +51,14 @@ export default function SolvePage() {
   const [submitError, setSubmitError] = useState('')
   const { refreshUser } = useAuth()
   const navigate = useNavigate()
-  const [testResult, setTestResult] = useState<TestRunResult | null>(null)
-  const [testError, setTestError] = useState('')
+  /** 테스트 실행 기록. 최신이 맨 앞 (응시 중에만 메모리에 둔다) */
+  const [testRuns, setTestRuns] = useState<TestRun[]>([])
+
+  // AI 터미널 (대화 기록은 응시 중에만 메모리에 둔다)
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([])
+  const [aiDraft, setAiDraft] = useState('')
+  const [aiPending, setAiPending] = useState(false)
+  const messageIdRef = useRef(0)
 
   /** 응시 시작 시각을 브라우저 시계로 환산한 값 (서버가 알려준 경과 시간을 반영) */
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null)
@@ -158,14 +167,14 @@ export default function SolvePage() {
   }
 
   async function handleSubmit() {
-    if (attempt === null || submitting || finished) return
+    if (attempt === null || submitting || finished || aiPending) return
     if (!window.confirm('제출하면 응시가 끝나고 숨김 테스트까지 채점합니다. 제출할까요?')) return
 
     setSubmitting(true)
     setSubmitError('')
     try {
       const fileList = Object.entries(files).map(([path, content]) => ({ path, content }))
-      const result = await submitAttempt(attempt.attemptId, fileList, modifiedPaths.size)
+      const result = await submitAttempt(attempt.attemptId, fileList)
       setSubmitResult(result)
       refreshUser().catch(() => {
         // 상단의 포인트 표시만 늦게 바뀔 뿐이라 무시한다
@@ -181,15 +190,75 @@ export default function SolvePage() {
     if (attempt === null || testRunning) return
     setBottomTab('test')
     setTestRunning(true)
-    setTestError('')
+    const runNumber = testRuns.length + 1
+    const ranAt = new Date()
     try {
       const fileList = Object.entries(files).map(([path, content]) => ({ path, content }))
-      setTestResult(await runTests(attempt.attemptId, fileList))
+      const result = await runTests(attempt.attemptId, fileList)
+      setTestRuns((prev) => [{ runNumber, ranAt, result }, ...prev])
     } catch (err: unknown) {
-      setTestResult(null)
-      setTestError(getErrorMessage(err, '테스트를 실행하지 못했습니다.'))
+      setTestRuns((prev) => [
+        { runNumber, ranAt, error: getErrorMessage(err, '테스트를 실행하지 못했습니다.') },
+        ...prev,
+      ])
     } finally {
       setTestRunning(false)
+    }
+  }
+
+  function addMessage(message: Omit<ChatMessage, 'id'>) {
+    messageIdRef.current += 1
+    const id = messageIdRef.current
+    setAiMessages((prev) => [...prev, { ...message, id }])
+  }
+
+  async function handleSendPrompt() {
+    const prompt = aiDraft.trim()
+    if (attempt === null || aiPending || finished || prompt === '') return
+
+    addMessage({ role: 'user', text: prompt })
+    setAiDraft('')
+    setAiPending(true)
+    try {
+      const fileList = Object.entries(files).map(([path, content]) => ({ path, content }))
+      const response = await sendPrompt(attempt.attemptId, prompt, fileList)
+
+      // AI가 바꾼 파일을 작업 폴더에 바로 반영한다 (새 파일은 추가)
+      if (response.changedFiles.length > 0) {
+        setFiles((prev) => {
+          const next = { ...prev }
+          response.changedFiles.forEach((file) => {
+            next[file.path] = file.content
+          })
+          return next
+        })
+        const changedPaths = response.changedFiles.map((file) => file.path)
+        setOpenPaths((prev) => [...prev, ...changedPaths.filter((path) => !prev.includes(path))])
+        setActivePath(changedPaths[0])
+      }
+
+      setAttempt((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              tokensUsed: response.tokensUsed,
+              promptCount: response.promptCount,
+              fileChangeCount: response.fileChangeCount,
+            },
+      )
+      addMessage({
+        role: 'ai',
+        text: response.reply,
+        changedPaths: response.changedFiles.map((file) => file.path),
+        tokens: response.inputTokens + response.outputTokens,
+      })
+    } catch (err: unknown) {
+      addMessage({ role: 'error', text: getErrorMessage(err, 'AI 응답을 받지 못했습니다.') })
+      // 보내지 못한 지시는 다시 고쳐 보낼 수 있게 입력창에 되돌린다
+      setAiDraft((current) => (current === '' ? prompt : current))
+    } finally {
+      setAiPending(false)
     }
   }
 
@@ -218,6 +287,7 @@ export default function SolvePage() {
 
   return (
     <div className="solve">
+      <ClipboardGuard />
       {/* 상단 바 */}
       <header className="solve-topbar">
         <div className="solve-topbar-left">
@@ -238,7 +308,7 @@ export default function SolvePage() {
             {usagePercent}%
           </span>
           <span className="muted">
-            지시 {attempt.promptCount} · 파일 변경 {modifiedPaths.size}
+            지시 {attempt.promptCount} · 파일 변경 {attempt.fileChangeCount}
           </span>
         </div>
 
@@ -246,7 +316,13 @@ export default function SolvePage() {
           <button type="button" className="button button-ghost" onClick={handleRunTests} disabled={testRunning}>
             {testRunning ? '테스트 중...' : '테스트 실행'}
           </button>
-          <button type="button" className="button" onClick={handleSubmit} disabled={submitting || finished}>
+          <button
+            type="button"
+            className="button"
+            onClick={handleSubmit}
+            disabled={submitting || finished || aiPending}
+            title={aiPending ? 'AI 작업이 끝난 뒤 제출할 수 있습니다' : undefined}
+          >
             {submitting ? '채점 중...' : finished ? '제출 완료' : '제출'}
           </button>
         </div>
@@ -326,6 +402,11 @@ export default function SolvePage() {
                   tabSize: 2,
                   automaticLayout: true,
                   scrollBeyondLastLine: false,
+                  // AI가 파일을 고치는 동안 직접 수정한 내용이 덮어써지지 않도록 잠근다
+                  readOnly: aiPending,
+                  // 오른쪽 클릭 메뉴(복사·붙여넣기 포함)와 에디터 안 끌어다 놓기를 끈다
+                  contextmenu: false,
+                  dragAndDrop: false,
                 }}
               />
             )}
@@ -340,7 +421,7 @@ export default function SolvePage() {
                 className={bottomTab === 'ai' ? 'active' : ''}
                 onClick={() => setBottomTab('ai')}
               >
-                AI 터미널
+                AI 터미널{aiPending && ' ●'}
               </button>
               <button
                 type="button"
@@ -350,11 +431,20 @@ export default function SolvePage() {
                 테스트
               </button>
             </div>
-            <div className="bottom-content">
+            <div className={`bottom-content${bottomTab === 'ai' ? ' ai-mode' : ''}`}>
               {bottomTab === 'ai' ? (
-                <p className="muted">AI 지시창은 다음 단계에서 연결합니다.</p>
+                <AiTerminal
+                  messages={aiMessages}
+                  draft={aiDraft}
+                  onDraftChange={setAiDraft}
+                  onSend={handleSendPrompt}
+                  pending={aiPending}
+                  disabled={finished}
+                  usagePercent={usagePercent}
+                  onOpenFile={openFile}
+                />
               ) : (
-                <TestResultView running={testRunning} result={testResult} error={testError} />
+                <TestResultView running={testRunning} runs={testRuns} />
               )}
             </div>
           </div>
@@ -382,36 +472,69 @@ export default function SolvePage() {
   )
 }
 
-/** 하단 "테스트" 탭의 내용 */
-function TestResultView({
-  running,
-  result,
-  error,
-}: {
-  running: boolean
-  result: TestRunResult | null
-  error: string
-}) {
-  if (running) {
-    return <p className="muted">테스트를 실행하는 중입니다... (처음 실행은 조금 더 걸릴 수 있습니다)</p>
-  }
-  if (error) {
-    return <p className="error">{error}</p>
-  }
-  if (result === null) {
+/** 테스트 실행 한 번의 기록 */
+interface TestRun {
+  runNumber: number
+  ranAt: Date
+  result?: TestRunResult
+  error?: string
+}
+
+/** node --test 출력(TAP)에서 실패한 테스트 이름만 뽑는다 */
+function failedTestNames(output: string): string[] {
+  const names = output
+    .split('\n')
+    .map((line) => /^not ok \d+ - (.+)$/.exec(line.trim())?.[1])
+    .filter((name): name is string => name !== undefined)
+  return [...new Set(names)]
+}
+
+function formatClock(date: Date): string {
+  return date.toLocaleTimeString('ko-KR', { hour12: false })
+}
+
+/** 하단 "테스트" 탭의 내용. 최신 결과가 맨 위, 이전 결과는 아래로 쌓인다 */
+function TestResultView({ running, runs }: { running: boolean; runs: TestRun[] }) {
+  if (!running && runs.length === 0) {
     return <p className="muted">상단의 "테스트 실행"을 누르면 공개 테스트 결과가 여기에 표시됩니다.</p>
   }
 
   return (
-    <div className="test-result">
-      <p className={result.passed ? 'test-summary pass' : 'test-summary fail'}>
-        {result.passed ? '✔ 공개 테스트 통과' : '✘ 공개 테스트 실패'} · {result.passedCount}/{result.totalCount} 통과 ·{' '}
-        {(result.durationMs / 1000).toFixed(1)}초{result.timedOut && ' · 제한시간 초과'}
-      </p>
-      {result.passed && (
-        <p className="muted">공개 테스트만 확인한 결과입니다. 제출하면 지킬 조건을 검사하는 숨김 테스트도 실행됩니다.</p>
+    <div className="test-history">
+      {running && <p className="muted test-run">테스트를 실행하는 중입니다...</p>}
+      {runs.map((run, index) => (
+        <TestRunItem key={run.runNumber} run={run} latest={index === 0 && !running} />
+      ))}
+    </div>
+  )
+}
+
+function TestRunItem({ run, latest }: { run: TestRun; latest: boolean }) {
+  const { result, error } = run
+  const failed = result && !result.passed ? failedTestNames(result.output) : []
+
+  return (
+    <div className={`test-run${latest ? '' : ' old'}`}>
+      <span className="test-run-meta">
+        #{run.runNumber} {formatClock(run.ranAt)}
+      </span>
+      {error !== undefined && <span className="error">{error}</span>}
+      {result && (
+        <div className="test-run-body">
+          <span className={result.passed ? 'test-summary pass' : 'test-summary fail'}>
+            {result.passed ? '✔ 공개 테스트 통과' : '✘ 공개 테스트 실패'} · {result.passedCount}/{result.totalCount} 통과 ·{' '}
+            {(result.durationMs / 1000).toFixed(1)}초{result.timedOut && ' · 제한시간 초과'}
+          </span>
+          {!result.passed && result.totalCount === 0 && !result.timedOut && (
+            <span className="test-failed">코드 오류로 테스트가 실행되지 않았습니다.</span>
+          )}
+          {failed.map((name) => (
+            <span key={name} className="test-failed">
+              ✘ {name}
+            </span>
+          ))}
+        </div>
       )}
-      <pre className="test-output">{result.output}</pre>
     </div>
   )
 }
