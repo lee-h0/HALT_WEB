@@ -16,15 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
+    /** 로그인·재발급 결과: 응답 본문(Access Token)과 쿠키로 보낼 Refresh Token */
+    public record TokenResult(LoginResponse body, String refreshToken) {
+    }
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider) {
+                       JwtTokenProvider jwtTokenProvider, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -47,16 +53,26 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
+    public TokenResult login(LoginRequest request) {
         // 아이디가 없는 경우와 비밀번호가 틀린 경우를 같은 메시지로 응답한다 (아이디 존재 여부를 알려주지 않기 위해)
         User user = userRepository.findByLoginId(request.loginId())
                 .filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."));
 
-        String accessToken = jwtTokenProvider.createAccessToken(user);
-        return new LoginResponse(accessToken, jwtTokenProvider.getAccessTokenValiditySec(),
-                user.getUserId(), user.getNickname());
+        RefreshTokenService.Issued refresh = refreshTokenService.issueNew(user.getUserId());
+        return new TokenResult(toResponse(user), refresh.rawToken());
+    }
+
+    /** Refresh Token으로 Access Token을 다시 받는다 (Refresh Token도 새것으로 바뀐다) */
+    public TokenResult refresh(String rawRefreshToken) {
+        RefreshTokenService.Issued refresh = refreshTokenService.rotate(rawRefreshToken);
+        User user = userRepository.findById(refresh.userId())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다."));
+        return new TokenResult(toResponse(user), refresh.rawToken());
+    }
+
+    public void logout(String rawRefreshToken) {
+        refreshTokenService.revoke(rawRefreshToken);
     }
 
     @Transactional(readOnly = true)
@@ -64,5 +80,10 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다."));
         return MeResponse.from(user);
+    }
+
+    private LoginResponse toResponse(User user) {
+        return new LoginResponse(jwtTokenProvider.createAccessToken(user),
+                jwtTokenProvider.getAccessTokenValiditySec(), user.getUserId(), user.getNickname());
     }
 }

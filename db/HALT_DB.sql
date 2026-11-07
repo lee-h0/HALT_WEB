@@ -239,3 +239,22 @@ INSERT INTO difficulty_settings (difficulty, token_limit, max_points, min_points
     ('MEDIUM', 40000, 20, 2, 10),
     ('HARD',   60000, 30, 3, 15);
 GO
+
+/* 12. refresh_tokens : Refresh Token (원문은 저장하지 않고 SHA-256 해시만) */
+CREATE TABLE refresh_tokens (
+    token_id    BIGINT IDENTITY(1,1) NOT NULL,
+    user_id     BIGINT        NOT NULL,
+    token_hash  VARCHAR(64)   NOT NULL,   -- SHA-256 16진수
+    family_id   VARCHAR(36)   NOT NULL,   -- 같은 로그인에서 회전으로 이어진 토큰 묶음 (UUID)
+    expires_at  DATETIME2(0)  NOT NULL,
+    created_at  DATETIME2(0)  NOT NULL CONSTRAINT DF_refresh_tokens_created_at DEFAULT SYSDATETIME(),
+    revoked_at  DATETIME2(0)  NULL,       -- 회전·로그아웃·탈취 감지로 무효가 된 시각
+    CONSTRAINT PK_refresh_tokens PRIMARY KEY (token_id),
+    CONSTRAINT UQ_refresh_tokens_hash UNIQUE (token_hash),
+    CONSTRAINT FK_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users (user_id)
+);
+GO
+
+CREATE INDEX IX_refresh_tokens_family ON refresh_tokens (family_id);
+CREATE INDEX IX_refresh_tokens_user_expires ON refresh_tokens (user_id, expires_at);
+GO
