@@ -13,7 +13,9 @@ import java.util.Map;
 
 /**
  * Gemini API (generateContent) 호출.
- * 응답은 우리가 정한 JSON 형식({"reply": ..., "files": [...]})으로 받도록 responseSchema를 지정한다.
+ * 응답은 우리가 정한 JSON 형식으로 받도록 responseSchema를 지정한다.
+ * - AI 지시창: CODE_SCHEMA ({"reply": ..., "files": [...]})
+ * - 다른 기능(오늘의 추천 등)은 자기 스키마를 넘겨 쓴다.
  */
 @Component
 public class GeminiClient {
@@ -26,7 +28,8 @@ public class GeminiClient {
     public record Result(String text, int inputTokens, int outputTokens, int totalTokens) {
     }
 
-    private static final Map<String, Object> RESPONSE_SCHEMA = Map.of(
+    /** AI 지시창 응답 형식 */
+    public static final Map<String, Object> CODE_SCHEMA = Map.of(
             "type", "OBJECT",
             "properties", Map.of(
                     "reply", Map.of("type", "STRING"),
@@ -69,8 +72,17 @@ public class GeminiClient {
      * @param systemInstruction AI의 역할과 규칙
      * @param turns             이전 대화 + 이번 지시 (마지막이 이번 지시)
      */
-    @SuppressWarnings("unchecked")
     public Result generate(String systemInstruction, List<Turn> turns) {
+        return generate(systemInstruction, turns, CODE_SCHEMA, 8192);
+    }
+
+    /**
+     * @param responseSchema  돌려받을 JSON 형식 (Gemini responseSchema 문법)
+     * @param maxOutputTokens 답변 최대 길이 (생각 토큰 포함)
+     */
+    @SuppressWarnings("unchecked")
+    public Result generate(String systemInstruction, List<Turn> turns,
+                           Map<String, Object> responseSchema, int maxOutputTokens) {
         List<Map<String, Object>> contents = turns.stream()
                 .map(turn -> Map.<String, Object>of(
                         "role", turn.role(),
@@ -82,8 +94,8 @@ public class GeminiClient {
                 "contents", contents,
                 "generationConfig", Map.of(
                         "responseMimeType", "application/json",
-                        "responseSchema", RESPONSE_SCHEMA,
-                        "maxOutputTokens", 8192,
+                        "responseSchema", responseSchema,
+                        "maxOutputTokens", maxOutputTokens,
                         "temperature", 0.4));
 
         Map<String, Object> response;

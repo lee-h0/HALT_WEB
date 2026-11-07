@@ -9,6 +9,7 @@ import ProblemListPage from './pages/ProblemListPage'
 import ProblemDetailPage from './pages/ProblemDetailPage'
 import SolvePage from './pages/SolvePage'
 import RankingPage from './pages/RankingPage'
+import MyPage from './pages/MyPage'
 
 /**
  * 화면 주소 목록.
@@ -27,7 +28,7 @@ export const router = createBrowserRouter([
         path: '/mypage',
         element: (
           <ProtectedRoute>
-            <PlaceholderPage title="마이페이지" />
+            <MyPage />
           </ProtectedRoute>
         ),
       },

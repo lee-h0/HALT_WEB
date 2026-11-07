@@ -30,6 +30,8 @@ from users;
 SELECT TOP 5 * FROM prompt_logs ORDER BY prompt_id DESC;
 SELECT TOP 3 attempt_id, tokens_used, prompt_count, file_change_count FROM attempts ORDER BY attempt_id DESC;
 
+SELECT * FROM daily_recommendations;
+
 /*항상 이것부터 실행 후 DB작업*/
 USE HALT_WEB_DB;
 GO
