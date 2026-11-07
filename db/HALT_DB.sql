@@ -33,6 +33,8 @@ SELECT TOP 3 attempt_id, tokens_used, prompt_count, file_change_count FROM attem
 SELECT * FROM daily_recommendations;
 
 SELECT * FROM solution_unlocks;
+
+SELECT attempt_id, spec_score, efficiency_score, accuracy_score, total_score, max_score FROM attempt_feedbacks;
 /*항상 이것부터 실행 후 DB작업*/
 USE HALT_WEB_DB;
 GO
@@ -257,4 +259,21 @@ GO
 
 CREATE INDEX IX_refresh_tokens_family ON refresh_tokens (family_id);
 CREATE INDEX IX_refresh_tokens_user_expires ON refresh_tokens (user_id, expires_at);
+GO
+
+/* 13. attempt_feedbacks : 제출한 응시의 AI 피드백. 처음 볼 때 한 번 만들고 저장해 다시 쓴다 */
+CREATE TABLE attempt_feedbacks (
+    attempt_id        BIGINT         NOT NULL,
+    spec_score        INT            NULL,       -- 조건 명시 0~5 (AI를 쓰지 않았으면 NULL)
+    efficiency_score  INT            NULL,       -- 지시 효율 0~5 (AI를 쓰지 않았으면 NULL)
+    accuracy_score    INT            NOT NULL,   -- 결과 정확성 0~5
+    total_score       INT            NOT NULL,   -- 위 점수의 합
+    max_score         INT            NOT NULL,   -- 평가한 항목 수 x 5
+    feedback_json     NVARCHAR(MAX)  NOT NULL,   -- 화면에 보여줄 피드백 전체 (JSON)
+    model             VARCHAR(50)    NOT NULL,
+    created_at        DATETIME2(0)   NOT NULL CONSTRAINT DF_attempt_feedbacks_created_at DEFAULT SYSDATETIME(),
+    CONSTRAINT PK_attempt_feedbacks PRIMARY KEY (attempt_id),
+    CONSTRAINT FK_attempt_feedbacks_attempt FOREIGN KEY (attempt_id) REFERENCES attempts (attempt_id) ON DELETE CASCADE,
+    CONSTRAINT CK_attempt_feedbacks_scores CHECK (total_score >= 0 AND max_score >= total_score)
+);
 GO

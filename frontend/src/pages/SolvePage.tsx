@@ -467,6 +467,7 @@ export default function SolvePage() {
           onClose={() => navigate('/problems')}
           onRetry={() => navigate(`/problems/${problem.problemId}`)}
           onSolutions={() => navigate(`/problems/${problem.problemId}/solutions`)}
+          onFeedback={() => navigate(`/attempts/${attempt.attemptId}/feedback`)}
         />
       )}
     </div>
@@ -547,6 +548,7 @@ function SubmitResultDialog({
   onClose,
   onRetry,
   onSolutions,
+  onFeedback,
 }: {
   result: SubmitResult
   problemTitle: string
@@ -554,6 +556,8 @@ function SubmitResultDialog({
   onRetry: () => void
   /** 다른 사람 풀이 화면으로 이동 (정답일 때만 버튼을 보여 준다) */
   onSolutions: () => void
+  /** AI 풀이 피드백(검증 역량 평가) 화면으로 이동 */
+  onFeedback: () => void
 }) {
   const minutes = Math.floor(result.elapsedSec / 60)
   const seconds = result.elapsedSec % 60
@@ -615,24 +619,21 @@ function SubmitResultDialog({
           </div>
         )}
 
-        <div className="dialog-actions">
+        <div className="dialog-actions" style={{ flexWrap: 'wrap' }}>
           <button type="button" className="button button-ghost" onClick={onRetry}>
             다시 풀기
           </button>
-          {result.correct ? (
-            <>
-              <button type="button" className="button button-ghost" onClick={onClose}>
-                문제 목록
-              </button>
-              <button type="button" className="button" onClick={onSolutions}>
-                다른 사람 풀이 보기
-              </button>
-            </>
-          ) : (
-            <button type="button" className="button" onClick={onClose}>
-              문제 목록
+          <button type="button" className="button button-ghost" onClick={onClose}>
+            문제 목록
+          </button>
+          {result.correct && (
+            <button type="button" className="button button-ghost" onClick={onSolutions}>
+              다른 사람 풀이
             </button>
           )}
+          <button type="button" className="button" onClick={onFeedback}>
+            AI 피드백 보기
+          </button>
         </div>
       </div>
     </div>

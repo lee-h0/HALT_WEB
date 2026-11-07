@@ -621,7 +621,7 @@ pre {
 
 .dialog {
   width: 100%;
-  max-width: 520px;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 28px;
@@ -783,10 +783,14 @@ pre {
     order: 3;
     flex-basis: 100%;
   }
-  
+
 }
 .start-actions {
   display: flex;
   gap: 12px;
   flex: none;
+}
+
+.dialog-actions .button {
+  white-space: nowrap;
 }

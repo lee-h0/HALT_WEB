@@ -12,6 +12,7 @@ import RankingPage from './pages/RankingPage'
 import MyPage from './pages/MyPage'
 import SolutionListPage from './pages/SolutionListPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
+import FeedbackPage from './pages/FeedbackPage'
 
 /**
  * 화면 주소 목록.
@@ -63,6 +64,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <SolutionDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/attempts/:attemptId/feedback',
+        element: (
+          <ProtectedRoute>
+            <FeedbackPage />
           </ProtectedRoute>
         ),
       },

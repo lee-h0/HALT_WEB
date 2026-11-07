@@ -87,6 +87,7 @@ export default function MyPage() {
                       <th className="num">점수</th>
                       <th className="num">소요 시간</th>
                       <th className="num">AI 사용량</th>
+                      <th className="num">피드백</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -105,6 +106,9 @@ export default function MyPage() {
                         <td className="num">{item.score} P</td>
                         <td className="num">{formatDuration(item.elapsedSec)}</td>
                         <td className="num">{item.tokenUsagePercent}%</td>
+                        <td className="num">
+                          <Link to={`/attempts/${item.attemptId}/feedback`}>보기</Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
