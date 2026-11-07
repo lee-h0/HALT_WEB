@@ -69,9 +69,14 @@ export default function ProblemDetailPage() {
             <p className="solved-warning">이미 푼 문제입니다. 다시 풀 수는 있지만 포인트는 지급되지 않습니다.</p>
           )}
         </div>
-        <Link to={`/problems/${problem.problemId}/solve`} className="button">
-          문제 풀기
-        </Link>
+        <div className="start-actions">
+          <Link to={`/problems/${problem.problemId}/solutions`} className="button button-ghost">
+            다른 사람 풀이
+          </Link>
+          <Link to={`/problems/${problem.problemId}/solve`} className="button">
+            문제 풀기
+          </Link>
+        </div>
       </div>
 
       <div className="card">

@@ -1,0 +1,208 @@
+/* 다른 사람 풀이 (목록, 상세) */
+.solutions h2 {
+  margin-top: 0;
+}
+
+.solutions-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.unlocked-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.solutions-hint {
+  margin-top: 0;
+}
+
+.solutions-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.solutions-table tr.clickable {
+  cursor: pointer;
+}
+
+.solutions-table tr.clickable:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.solutions-table tr.me td {
+  background: rgba(47, 111, 237, 0.15);
+  font-weight: 700;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.me-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* 잠금 화면 */
+.lock-card {
+  text-align: center;
+}
+
+.lock-icon {
+  font-size: 2rem;
+}
+
+.lock-warning {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.lock-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* 상세: 기록 요약 */
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+}
+
+.detail-stat strong {
+  font-size: 1.3rem;
+}
+
+.detail-stat strong.accent {
+  color: var(--primary-hover);
+}
+
+.solutions > .card + .card {
+  margin-top: 20px;
+}
+
+/* 상세: 지시 기록 */
+.prompt-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prompt-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.prompt-item:first-child {
+  padding-top: 0;
+}
+
+.prompt-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.prompt-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+
+.prompt-no {
+  color: var(--primary-hover);
+  font-weight: 700;
+}
+
+.prompt-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.prompt-response {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+.prompt-response p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+}
+
+.prompt-ai {
+  flex: none;
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* 상세: 코드 */
+.code-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.code-tabs button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-family: Consolas, monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.code-tabs button.active {
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+.code-view {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .detail-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -783,4 +783,10 @@ pre {
     order: 3;
     flex-basis: 100%;
   }
+  
+}
+.start-actions {
+  display: flex;
+  gap: 12px;
+  flex: none;
 }

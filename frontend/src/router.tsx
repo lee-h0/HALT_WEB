@@ -10,6 +10,8 @@ import ProblemDetailPage from './pages/ProblemDetailPage'
 import SolvePage from './pages/SolvePage'
 import RankingPage from './pages/RankingPage'
 import MyPage from './pages/MyPage'
+import SolutionListPage from './pages/SolutionListPage'
+import SolutionDetailPage from './pages/SolutionDetailPage'
 
 /**
  * 화면 주소 목록.
@@ -45,6 +47,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ProblemDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/problems/:problemId/solutions',
+        element: (
+          <ProtectedRoute>
+            <SolutionListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/solutions/:attemptId',
+        element: (
+          <ProtectedRoute>
+            <SolutionDetailPage />
           </ProtectedRoute>
         ),
       },

@@ -32,6 +32,7 @@ SELECT TOP 3 attempt_id, tokens_used, prompt_count, file_change_count FROM attem
 
 SELECT * FROM daily_recommendations;
 
+SELECT * FROM solution_unlocks;
 /*항상 이것부터 실행 후 DB작업*/
 USE HALT_WEB_DB;
 GO
